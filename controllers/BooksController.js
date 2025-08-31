@@ -75,14 +75,12 @@ export const getBooks = async (req, res) => {
 
 export const recomBooks = async (req, res) => {
   try {
-    const books = await Book.findOne(
-      { user: req.user._id }.sort({ createdAt: -1 })
-    );
-
-    res.status(200).json({
-      success: true,
-      message: "Your all recommended books",
+    const books = await Book.find({ user: req.user._id }).sort({
+      createdAt: -1,
     });
+    res
+      .status(200)
+      .json({ success: true, message: "Your recommended books", books });
   } catch (error) {
     res.status(400).json({
       success: true,
