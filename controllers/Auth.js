@@ -128,8 +128,6 @@ export const login = async (req, res) => {
         createdAt: user.createdAt,
       },
     });
-
-    re;
   } catch (error) {
     res.status(500).json({
       success: false,
