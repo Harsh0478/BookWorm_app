@@ -1,7 +1,6 @@
 import cloudinary from "../config/cloudinary.js";
 import Book from "../models/Books.js";
 
-
 // Upload Books
 export const uploadBooks = async (req, res) => {
   try {
@@ -14,68 +13,31 @@ export const uploadBooks = async (req, res) => {
       });
     }
 
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "User not found, token may be invalid",
-      });
-    }
-
-    // Log first 50 chars of the image Base64 for debugging
-    console.log("Received image (start):", image?.slice(0, 50));
-    console.log("Title:", title, "Caption:", caption, "Rating:", rating);
-    console.log("User ID:", req.user._id);
-
-    let uploadResponse;
-    try {
-      uploadResponse = await cloudinary.uploader.upload(image);
-      console.log("Cloudinary Response:", uploadResponse);
-    } catch (cloudErr) {
-      console.error("Cloudinary upload error:", cloudErr.message);
-      return res.status(500).json({
-        success: false,
-        message: "Cloudinary upload failed",
-        error: cloudErr.message,
-      });
-    }
-
+    const uploadResponse = await cloudinary.uploader.upload(image);
+    console.log("Cloudinary Response : ", uploadResponse);
     const imageUrl = uploadResponse.secure_url;
 
-    // Save to DB
-    let newBook;
-    try {
-      newBook = await Book.create({
-        title,
-        caption,
-        rating,
-        image: imageUrl,
-        user: req.user._id,
-      });
-      console.log("Book saved:", newBook._id);
-    } catch (dbErr) {
-      console.error("Database save error:", dbErr.message);
-      return res.status(500).json({
-        success: false,
-        message: "Database error while creating book",
-        error: dbErr.message,
-      });
-    }
+    //   Save to DB
+    const newBook = await Book.create({
+      title,
+      caption,
+      rating,
+      image: imageUrl,
+      user: req.user._id,
+    });
 
     res.status(201).json({
       success: true,
       message: "New Book is added Successfully",
-      book: newBook,
     });
   } catch (error) {
-    console.error("Unexpected error:", error.message);
     res.status(500).json({
       success: false,
-      message: "Unexpected error creating book",
+      message: "Error Creating a Book",
       error: error.message,
     });
   }
 };
-
 
 // Fetch Books
 export const getBooks = async (req, res) => {
