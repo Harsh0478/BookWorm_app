@@ -46,7 +46,7 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const profile = `https://api.dicebear.com/9.x/avataaars/svg?seed=${username}`;
+    const profile = `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${username}`;
 
     const newUser = await User.create({
       username,
@@ -124,6 +124,8 @@ export const login = async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
+        profileImage: user.profileImage,
+        createdAt: user.createdAt,
       },
     });
 
