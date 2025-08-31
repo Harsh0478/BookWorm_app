@@ -1,9 +1,6 @@
 import cloudinary from "../config/cloudinary.js";
 import Book from "../models/Books.js";
 
-// Upload Books
-import cloudinary from "../config/cloudinary.js";
-import Book from "../models/Books.js";
 
 // Upload Books
 export const uploadBooks = async (req, res) => {
