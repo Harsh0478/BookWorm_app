@@ -12,6 +12,6 @@ const router = express.Router();
 router.post("/", protectRoute, uploadBooks);
 router.get("/", protectRoute, getBooks);
 router.get("/user", protectRoute, recomBooks);
-router.delete("/:id", deleteBook);
+router.delete("/:id", protectRoute, deleteBook);
 
 export default router;
