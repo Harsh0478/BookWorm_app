@@ -92,7 +92,7 @@ export const recomBooks = async (req, res) => {
 // delete Books
 export const deleteBook = async (req, res) => {
   try {
-    const { id } = req.params.id;
+    const id = req.params.id;
     const book = await Book.findById(id);
 
     if (!book) {
@@ -109,16 +109,22 @@ export const deleteBook = async (req, res) => {
       });
     }
 
+    // delete from Cloudinary if image hosted there
     if (book.image.includes("cloudinary")) {
       try {
         const publicId = book.image.split("/").pop().split(".")[0];
         await cloudinary.uploader.destroy(publicId);
       } catch (error) {
-        console.log("Error while deleting image from Cloudinary");
+        console.log("Error while deleting image from Cloudinary", error.message);
       }
     }
 
     await book.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Book deleted successfully",
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
