@@ -71,7 +71,7 @@ npm install
 npx expo
 ```
 
-##🔥 With BookWorm, you can:
+🔥 With BookWorm, you can:
 ```bash
 
 Discover trending and recommended books 📖
