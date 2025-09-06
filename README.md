@@ -62,10 +62,15 @@ cd backend
 npm install
 npm run dev
 
-📱 Run the Mobile App
+```
+
+## 📱 Run the mobile
+
+```bash
 cd mobile
 npm install
 npx expo
+```
 
 
 🔥 With BookWorm, you can:
