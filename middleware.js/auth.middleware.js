@@ -4,30 +4,47 @@ import "dotenv/config";
 
 const protectRoute = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
-    if (!token) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Token not found, access denied" });
+    const authHeader = req.header("Authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
     }
 
-    const decode = jwt.verify(token, process.env.JWT_SECRET);
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
 
-    const user = await User.findById(decode.userId).select("-password");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Token is not valid",
+        message: "User no longer exists",
       });
     }
 
     req.user = user;
-
     next();
   } catch (error) {
-    res.status(500).json({
+    if (error.name === "TokenExpiredError" || error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    console.error("Authentication error:", error);
+    return res.status(500).json({
       success: false,
-      error: error.message,
+      message: "Authentication service error",
     });
   }
 };

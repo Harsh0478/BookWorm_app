@@ -1,135 +1,153 @@
 import cloudinary from "../config/cloudinary.js";
 import Book from "../models/Books.js";
 
-// Upload Books
+const parseRating = (value) => {
+  const rating = Number(value);
+  return Number.isFinite(rating) ? rating : NaN;
+};
+
 export const uploadBooks = async (req, res) => {
   try {
     const { title, caption, rating, image } = req.body;
+    const numericRating = parseRating(rating);
 
-    if (!title || !caption || !rating || !image) {
+    if (!title?.trim() || !caption?.trim() || !image) {
       return res.status(400).json({
         success: false,
-        message: "All fields should be filled",
+        message: "Title, caption and image are required",
       });
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(image);
-    console.log("Cloudinary Response : ", uploadResponse);
-    const imageUrl = uploadResponse.secure_url;
+    if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be between 1 and 5",
+      });
+    }
 
-    //   Save to DB
+    const uploadResponse = await cloudinary.uploader.upload(image, {
+      folder: "bookworm/books",
+      resource_type: "image",
+    });
+
     const newBook = await Book.create({
-      title,
-      caption,
-      rating,
-      image: imageUrl,
+      title: title.trim(),
+      caption: caption.trim(),
+      rating: numericRating,
+      image: uploadResponse.secure_url,
+      cloudinaryPublicId: uploadResponse.public_id,
       user: req.user._id,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "New Book is added Successfully",
+      message: "Book added successfully",
+      book: newBook,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Error creating book:", error);
+    return res.status(500).json({
       success: false,
-      message: "Error Creating a Book",
-      error: error.message,
+      message: "Error creating book",
     });
   }
 };
 
-// Fetch Books
 export const getBooks = async (req, res) => {
   try {
-    const page = req.query.page || 1;
-    const limit = req.query.limit || 5;
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(
+      Math.max(Number.parseInt(req.query.limit, 10) || 5, 1),
+      50
+    );
     const skip = (page - 1) * limit;
 
-    const books = await Book.find()
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(skip)
-      .populate("user", "username profileImage");
+    const [books, totalBooks] = await Promise.all([
+      Book.find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("user", "username profileImage")
+        .lean(),
+      Book.countDocuments(),
+    ]);
 
-    const totalBooks = await Book.countDocuments();
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "All Books Fetched Sucessfully",
+      message: "All books fetched successfully",
       books,
       currentPage: page,
       totalBooks,
       totalPages: Math.ceil(totalBooks / limit),
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Error fetching books:", error);
+    return res.status(500).json({
       success: false,
       message: "Server error while fetching books",
-      error: error.message,
     });
   }
 };
-
-// Uploded Books
 
 export const recomBooks = async (req, res) => {
   try {
-    const books = await Book.find({ user: req.user._id }).sort({
-      createdAt: -1,
-    });
-    res
-      .status(200)
-      .json({ success: true, message: "Your recommended books", books });
-  } catch (error) {
-    res.status(400).json({
+    const books = await Book.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
       success: true,
-      message: "Unable to finde your recommended books",
+      message: "Your recommended books",
+      books,
+    });
+  } catch (error) {
+    console.error("Error fetching user books:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to find your recommended books",
     });
   }
 };
 
-// delete Books
 export const deleteBook = async (req, res) => {
   try {
-    const id = req.params.id;
-    const book = await Book.findById(id);
+    const book = await Book.findById(req.params.id);
 
     if (!book) {
       return res.status(404).json({
         success: false,
-        message: "Book not Found",
+        message: "Book not found",
       });
     }
 
     if (book.user.toString() !== req.user._id.toString()) {
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
-        message: "Unauthorized Access",
+        message: "You can only delete your own books",
       });
     }
 
-    // delete from Cloudinary if image hosted there
-    if (book.image.includes("cloudinary")) {
+    if (book.cloudinaryPublicId) {
       try {
-        const publicId = book.image.split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(publicId);
+        await cloudinary.uploader.destroy(book.cloudinaryPublicId, {
+          resource_type: "image",
+        });
       } catch (error) {
-        console.log("Error while deleting image from Cloudinary", error.message);
+        console.error("Cloudinary deletion failed:", error.message);
       }
     }
 
     await book.deleteOne();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Book deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Error deleting book:", error);
+    return res.status(500).json({
       success: false,
-      message: "Unable to delete a book",
-      error: error.message,
+      message: "Unable to delete book",
     });
   }
 };
