@@ -1,14 +1,14 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "description": "",
+  "name": "bookworm-backend",
+  "version": "1.1.0",
+  "description": "BookWorm book recommendation API",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["bookworm", "books", "recommendations"],
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -21,5 +21,8 @@
     "mongoose": "^8.18.0",
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
