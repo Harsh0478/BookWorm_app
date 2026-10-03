@@ -2,6 +2,11 @@ import nodemailer from "nodemailer";
 import "dotenv/config";
 
 const mailSender = async (email, subject, body) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn("Email credentials are not configured; skipping welcome email.");
+    return;
+  }
+
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -11,18 +16,16 @@ const mailSender = async (email, subject, body) => {
       },
     });
 
-    const info = await transporter.sendMail({
-      from: `"BookWorm" <${process.env.EMAIL_USER}`,
-      to: `${email}`,
-      subject: `${subject}`,
-      html: `${body}`,
+    await transporter.sendMail({
+      from: `"BookWorm" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject,
+      html: body,
     });
 
-    console.log("Email Sent Sucessfully");
-    console.log(info);
+    console.log("Welcome email sent successfully");
   } catch (error) {
-    console.log("Email Sent Failed");
-    console.log(error.message);
+    console.error("Welcome email failed:", error.message);
   }
 };
 
